@@ -21,7 +21,7 @@ int match(char *, char *);
 
         struct TOKEN_LEX
         {
-            char *linea;
+            char linea[50];
             int indice;
             //char cod_asc_words[8];  //CODIGO ASCII DE LAS PALABRAS RESERVADAS
         };
@@ -49,23 +49,29 @@ int main(int argc, char const *argv[])
     }
     case 0: /*HIJO*/
     {
-       
         pthread_t LEX_THREAD_LOAD; // HILO QUE EJECUTA LA CARGA DE LOS ALFABETOS!.
         pthread_t LEX_THREAD_ANALICE; // HILO QUE EJECUTA EL ANALISIS LEXIC.
+
         PID_SON = getpid();
 
         scanf("%[^\n]", _INIT_TEXT); // COMANDO DE ENTRADA
         pthread_create(&LEX_THREAD_LOAD, NULL, carga,NULL);
-        pthread_create(&LEX_THREAD_ANALICE, NULL,verifica,(void *)&TOK);
-        //printf("MCON = %s\n", *(MCOM+4));
+        pthread_create(&LEX_THREAD_ANALICE, NULL,verifica,(void *)TOK);
+        // printf("MCON = %s\n", *(MCOM+4));
             // int a; char x[] = "_99", *y="_[a-zA-Z]+[1-9]|[a-zA-Z]+[1-9]";
             // a = match(x,y);
             // printf("a = %d",a);
        
         //pthread_cancel(LEX_THREAD_LOAD); //mata el hilo hp
-        pthread_join(LEX_THREAD_ANALICE, NULL); //ESTE PROCESOS ESPERA A QUE EL HILO CULMINE
         pthread_join(LEX_THREAD_LOAD, NULL); //ESTE PROCESOS ESPERA A QUE EL HILO CULMINE
-        printf("MAIN TOK: %s\n", TOK[0].linea);
+        pthread_join(LEX_THREAD_ANALICE, NULL); //ESTE PROCESOS ESPERA A QUE EL HILO CULMINE
+        for (int i = 0; i < 5; i++)
+        {
+            printf("MAIN TOK LINEA: %s\n", TOK[i].linea);
+            printf("MAIN TOK INDICE: %d\n", TOK[i].indice);
+            printf("\n");
+        }
+        
         exit(getpid() > PID_DAD);
     }
     default: /*PADRE*/
@@ -80,6 +86,7 @@ int main(int argc, char const *argv[])
     //======= NO COLOCAR NADA DESPUES DE AQUI, SI CONSIDERAS QUE EL PROCESO PADRE EJECUTE ALGO INDEPENDIENTE, DEBE SER DENTRO DEL IF, Y LO MISMO EN EL HIJO. ======/
     return 0;
 } // FIN DEL MAIN alv
+
 
 void *carga(void *args){ 
     FILE *archivo;
@@ -118,27 +125,43 @@ void *carga(void *args){
 void *verifica(void *args){
     struct TOKEN_LEX *TOK; 
     TOK = (struct TOKEN_LEX *)args;
-    TOK->linea = (char *)malloc(20*sizeof(char));
+    FILE *GEN;
+    GEN = fopen(_INIT_TEXT, "r"); 
 
-    FILE *GEN;char z[20]; int k=0;
+    char z;
+    int res_pal = 0;  // resto de la palabra reservada
+    int cant_pal = 0; // cantidad de palabras reservadas
 
-     GEN = fopen(_INIT_TEXT, "r"); 
+    char **m_temporal = (char **)malloc(20*sizeof(char *));
+        for (int i = 0; i < 20;i++)
+            m_temporal[i] = (char *)malloc(120*sizeof(char));; 
+
         if(GEN == NULL){
             THIS_NRM(0);THIS_ERROR();THIS_NRM(1); printf("Archivo '%s' en conflicto.\n", _INIT_TEXT);
             exit(EXIT_FAILURE);
         } else {
-            while (!feof(GEN)){
-                fscanf(GEN, "%s" ,z);
-                (TOK+k)->linea  = z;
-                (TOK+k)->indice = k;
-                k++;
-            }//fin while que manipula los alfabetos
-        }
-        printf("k: %d\n",k);
-        printf("linea: %s\n",TOK[4].linea);
-        printf("ok3 = %d\n",TOK[4].indice);
+            while((z = fgetc(GEN)) != EOF)
+	        {
+                if(z != '\n' && z){
+                    m_temporal[cant_pal][res_pal++] = z;
+                }
+                else{
+                     printf("[%d]\n", cant_pal);
+                    // printf("m_temporal: %s\n", m_temporal[3]);
+                    m_temporal[cant_pal][res_pal]='\0';
+                        strcpy((TOK+cant_pal)->linea, m_temporal[cant_pal]);
+                        (TOK+cant_pal)->indice = cant_pal;
+                    res_pal = 0;
+                    cant_pal ++;
+                     
+                }
+                
+	        }
+         }//end else
+       
         fclose(GEN);
-        
+        // free(*m_temporal);
+        // *m_temporal = NULL;
     return EXIT_SUCCESS;
 }//fin analicis
 
