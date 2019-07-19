@@ -1,4 +1,14 @@
-Hola mundo
-como estan
-todo bien
-si? que
+b=tauto( a -> a );
+writestr(“Es (a -> a) una tautologia? “);
+writelog(b);
+writeintro();
+c=contra( a -> - a );
+writestr(“Es (a -> -a) una contradiccion? “);
+writelog(c);
+writeintro();
+d=deci( a -> a );
+writestr(“Es decidible (a -> a) ? “);
+writelog(d);
+writeintro();
+writestr(“La tabla de verdad de (a + b * c) es : “);
+writetabla( a + b * c );
